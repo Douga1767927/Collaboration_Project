@@ -17,55 +17,58 @@ font_import()
 loadfonts(device="win")
 
 ## Load Data
-gene_data <- read_csv(
+data <- read_csv(
   here::here(
-    "data", "2023-04-04_gene-exp_cleaned.csv"
+    "data", "2023-06-01_gene-exp_cleaned.csv"
   )
 )
-gene_data
+data
 
 
-## Index of the points we want to label
+## Index positions of the points we want to label
 idx_lab <- c(11, 22, 33, 43, 54, 65, 76, 87)
 
 ## Create new column exp_label with empty strings for all index not in idx_lab
-gene_data <- gene_data |>
-  mutate(exp_label = exp_name)
-gene_data$exp_label[-idx_lab] <- ""
-gene_data
+data <- data |>
+  mutate(exp_label = cell_type)
+
+data$exp_label[-idx_lab] <- ""
+data
 
 ## Make legend order AF42 then Placebo
-gene_data <- gene_data |>
-  mutate(group = as.factor(group),
-         group = factor(group, levels = rev(levels(group))))
-gene_data
+data <- data |>
+  mutate(treatment = as.factor(treatment),
+         treatment = factor(treatment, levels = rev(levels(treatment))))
+data
 
 ## Remove "GL-" from treatment names
-gene_data$exp_label <- str_remove_all(string = gene_data$exp_label, pattern = "[GL-]")
-gene_data
+data$exp_label <- str_remove_all(string = data$exp_label, pattern = "[GL-]")
+data
 
-## Step by step plots for wild type
-wild_p1 <- gene_data |>
+## Step by step plots for wild type ##
+
+# Step 1: get basic scatterplot
+wild_p1 <- data |>
   filter(cell_line == "wild") |>
   ggplot(aes(x = concentration, y = gene_exp, label = exp_label)) +
-  geom_point(aes(fill = group), size = 3, shape = 21, colour = "black") +
+  geom_point(aes(fill = treatment), size = 3, shape = 21, colour = "black") +
   theme_bw()
 wild_p1
 
-# Add required x-axis and grid
+# Step 2: Add required x-axis and grid
 wild_p2 <- wild_p1 +
   scale_x_continuous(breaks = seq(0,10,1), minor_breaks = seq(0,11,0.5))
 wild_p2
 
-# Add required colour scheme and legend names
+# Step 3: Add required colour scheme and legend names
 wild_p3 <- wild_p2 +
   scale_fill_manual(values = c("#83a7d4", "#d1bf94"),
                     labels = c("Activating Factor 42", "Placebo"))
 wild_p3
 
-# Use ggrepel to label experiment name
+# Step 4: Use ggrepel to label experiment name
 wild_p4 <- wild_p3 +
-  geom_label_repel(aes(fill = group),
+  geom_label_repel(aes(fill = treatment),
                    col = "black",
                    xlim = c(-Inf, NA),
                    ylim = c(-Inf, NA),
@@ -77,7 +80,7 @@ wild_p4 <- wild_p3 +
                    family = "Times New Roman")
 wild_p4
 
-# Add titles and themes
+# Step 5: Add titles and themes
 wild_p5 <- wild_p4 +
    labs(title = "Wild Type",
        tag = "A",
@@ -96,15 +99,15 @@ wild_p5 <- wild_p4 +
 wild_p5
 
 ## Same plot for cell-type 101
-cell101_plot <- gene_data |>
+cell101_plot <- data |>
   filter(cell_line == "cell101") |>
   ggplot(aes(x = concentration, y = gene_exp, label = exp_label)) +
-  geom_point(aes(fill = group), size = 3, shape = 21, colour = "black") +
+  geom_point(aes(fill = treatment), size = 3, shape = 21, colour = "black") +
   theme_bw() +
   scale_x_continuous(breaks = seq(0,10,1), minor_breaks = seq(0,11,0.5)) +
   scale_fill_manual(values = c("#83a7d4", "#d1bf94"),
                     labels = c("Activating Factor 42", "Placebo")) +
-  geom_label_repel(aes(fill = group),
+  geom_label_repel(aes(fill = treatment),
                    col = "black",
                    xlim = c(-Inf, NA),
                    ylim = c(-Inf, NA),

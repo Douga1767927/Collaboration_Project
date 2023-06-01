@@ -3,62 +3,17 @@
 ## 10/03/2023
 
 # Load Libs
-pacman::p_load(tidyverse, here, patchwork, viridis, gt, vtable)
+pacman::p_load(tidyverse, here, viridis, gt)
 
 # Read in data
 data <- read_csv(
   here::here(
-    "data", "2023-03-22_gene-exp_cleaned.csv"
+    "data", "2023-06-01_gene-exp_cleaned.csv"
   )
 )
 data
 
 ## EDA
-
-# CLEANING ----
-# Skim data
-skimr::skim_without_charts(data)
-
-# Remove missing value
-data <- na.omit(data)
-
-# EDIT: Changing group level treatment to AF42 & new variable exp_name
-data <- data |>
-  mutate(
-    group = str_replace(group, "treatment", "AF42")
-    # exp_name = str_replace(as.character(block),
-    #                        "[12345678]",
-    #                        c("GL-CsE",
-    #                          "GL-bNo",
-    #                          "GL-JZC",
-    #                          "GL-fug",
-    #                          "GL-jEK",
-    #                          "GL-Hoe",
-    #                          "GL-Rza",
-    #                          "GL-xpo"))
-  )
-
-# Converting character variables to factor
-data <- data |>
-  mutate(cell_line = as.factor(cell_line),
-         group = as.factor(group),
-         block = as.factor(block))
-data
-
-# Getting experiment names from block Id
-data$exp_name <- as.character(data$block)
-data$exp_name[data$exp_name == "1"] <- "GL-CsE"
-data$exp_name[data$exp_name == "2"] <- "GL-bNo"
-data$exp_name[data$exp_name == "3"] <- "GL-JZC"
-data$exp_name[data$exp_name == "4"] <- "GL-fUg"
-data$exp_name[data$exp_name == "5"] <- "GL-jEK"
-data$exp_name[data$exp_name == "6"] <- "GL-Hoe"
-data$exp_name[data$exp_name == "7"] <- "GL-Rza"
-data$exp_name[data$exp_name == "8"] <- "GL-xpo"
-
-# Save cleaned dataset
-data
-write.csv(data, file = here::here("data","2023-05-29_cleaned-data-final.csv"), row.names=FALSE)
 
 # FIGURES ----
 ### Histograms
@@ -71,93 +26,101 @@ p1 <- ggplot(data, aes(x = gene_exp)) +
   theme_bw()
 p1
 
-# Histogram of Gene Expression for Treatment and Placebo Groups
-p2 <- ggplot(data, aes(x = gene_exp)) +
-  geom_histogram(fill = "green4", colour = "black") +
-  labs(title = "Histogram of Gene Expression for Treatment and Placebo Groups") +
-  xlab("Gene Expression") +
-  ylab("Count") +
-  theme_bw()+
-  facet_wrap(vars(group))
-p2
+ggsave(
+  filename = here::here("figs", "2023-06-01_gene-exp_hist.png"),
+  plot = p1,
+  width = 12,
+  height = 9
+)
 
 # Histogram of Gene Expression for Wild and Type-101 Cell Lines
-p3 <- ggplot(data, aes(x = gene_exp)) +
+p2 <- ggplot(data, aes(x = gene_exp)) +
   geom_histogram(fill = "cyan4", colour = "black") +
   labs(title = "Histogram of Gene Expression for Wild and Type-101 Cell Lines") +
   xlab("Gene Expression") +
   ylab("Count") +
   theme_bw()+
   facet_wrap(vars(cell_line))
-p3
+p2
+
+ggsave(
+  filename = here::here("figs", "2023-06-01_gene-exp-cell-line_hist.png"),
+  plot = p2,
+  width = 12,
+  height = 9
+)
 
 ### Scatterplots
 # Scatterplot of Gene Expression vs. Concentration
-p4 <- ggplot(data, aes(x = concentration,
+p3 <- ggplot(data, aes(x = concentration,
                        y = gene_exp,
-                       col = group)) +
+                       col = treatment)) +
   geom_point(size = 3) +
-  geom_smooth(aes(color = group), method = "lm") +
+  geom_smooth(aes(color = treatment), method = "lm") +
   labs(title = "Scatterplot of Gene Expression vs. Concentration",
-       subtitle = "Coloured by Treatment (Activating Factor 42) or Placebo",
-       col = "Subject Group") +
-  ylab("Gene Expression") +
-  xlab("Growth Factor Concentration (mg/mL)") +
+       subtitle = "Coloured by Treatment (Activating Factor 42 or Placebo)",
+       col = "Treatment Group",
+       x = expression(paste("Growth Factor Concentration ", mu,"g/ml")),
+       y = "Gene Expression") +
   theme_bw()
-p4
+p3
+
+ggsave(
+  filename = here::here("figs", "2023-06-01_gene-exp_scatter.png"),
+  plot = p3,
+  width = 12,
+  height = 9
+)
 
 # Scatterplot of Gene Expression vs Concentration (Both Types)
-p5 <- ggplot(
+p4 <- ggplot(
   data = data,
   aes(x = concentration, y = gene_exp)) +
-  geom_point(aes(col = group), size = 3) +
-  geom_smooth(aes(col = group), method = "lm") +
+  geom_point(aes(col = treatment), size = 3) +
+  geom_smooth(aes(col = treatment), method = "lm") +
   facet_wrap(vars(cell_line)) +
   labs(title = "Scatterplot of Gene Expression vs. Concentration ",
        subtitle = "Coloured by Treatment Group (Placebo or Activating Factor 42)",
-       col = "Treatment Group") +
-  ylab("Gene Expression") +
-  xlab("Growth Factor Concentration (mg/mL)") +
+       col = "Treatment Group",
+       x = expression(paste("Growth Factor Concentration ", mu,"g/ml")),
+       y = "Gene Expression") +
+  theme_bw()
+p4
+
+ggsave(
+  filename = here::here("figs", "2023-06-01_gene-exp-cell-line_scatter.png"),
+  plot = p4,
+  width = 12,
+  height = 9
+)
+
+p5 <- ggplot(
+  data = data,
+  aes(x = concentration, y = gene_exp)) +
+  geom_point(aes(col = cell_type, shape = treatment), size = 2) +
+  geom_smooth(aes(col = cell_type), method = "lm") +
+  facet_wrap(vars(cell_line)) +
+  labs(title = "Scatterplot of Gene Expression vs. Concentration ",
+       subtitle = "Coloured by Cell Type",
+       col = "Cell Type",
+       shape = "Treatment Type",
+       x = expression(paste("Growth Factor Concentration (", mu,"g/ml)")),
+       y = "Gene Expression") +
   theme_bw()
 p5
 
-# Scatterplot of Gene Exp. vs Conc. (treatment)
-p6 <- ggplot(
-  data = data |> filter(group == "AF42"),
-  aes(x = concentration, y = gene_exp)) +
-  geom_point(aes(col = exp_name), size = 3) +
-  geom_smooth(aes(col = exp_name), method = "lm") +
-  facet_wrap(vars(cell_line)) +
-  labs(title = "Scatterplot of Treatment Group (AF42) Gene Expression vs. Concentration ",
-       subtitle = "Coloured by Experiment Name",
-       col = "Experiment Name") +
-  ylab("Gene Expression") +
-  xlab("Growth Factor Concentration (mg/mL)") +
-  theme_bw()
-p6
-
-# Scatterplot of Gene Exp. vs Conc. (Placebo)
-p7 <- ggplot(
-  data = data |> filter(group == "placebo"),
-  aes(x = concentration, y = gene_exp)) +
-  geom_point(aes(col = exp_name), size = 3) +
-  geom_smooth(aes(col = exp_name), method = "lm") +
-  facet_wrap(vars(cell_line)) +
-  labs(title = "Scatterplot of Placebo Group Gene Expression vs. Concentration ",
-       subtitle = "Coloured by Experiment Block",
-       col = "Experiment Block") +
-  ylab("Gene Expression") +
-  xlab("Growth Factor Concentration (mg/mL)") +
-  theme_bw() +
-  scale_colour_viridis_d()
-p7
-
+ggsave(
+  filename = here::here("figs", "2023-06-01_gene-exp-cell-type_scatter.png"),
+  plot = p5,
+  width = 12,
+  height = 9
+)
 
 ### Boxplots
 # Boxplot of Gene Expression by Treatment Group
-p8 <- ggplot(
+p6 <- ggplot(
   data = data,
-  aes(x = group, y = gene_exp, fill = group)) +
+  aes(x = treatment, y = gene_exp, fill = treatment)) +
   geom_boxplot() +
   facet_wrap(vars(cell_line)) +
   labs(title = "Boxplot of Gene Expression by Treatment Group (Placebo or Activating Factor 42)",
@@ -165,54 +128,33 @@ p8 <- ggplot(
   ylab("Gene Expression") +
   xlab("Treatment Group") +
   theme_bw()
-p8
+p6
 
-# Boxplot of Gene Expression by Treatment Group wrapped by cell_line
-p8 <- ggplot(
-  data = data,
-  aes(x = group, y = gene_exp, fill = group)) +
-  geom_boxplot() +
-  facet_wrap(vars(cell_line)) +
-  labs(title = "Boxplot of Gene Expression by Treatment Group (Placebo or Activating Factor 42)",
-       fill = "Treatment Group") +
-  ylab("Gene Expression") +
-  xlab("Treatment Group") +
-  theme_bw()
-p8
-
-# Look at cell101 individual experiments
-p9 <- ggplot(
-  data = data |> filter(cell_line == "cell101",
-                        group == "AF42"),
-  aes(x = group, y = gene_exp, fill = group)) +
-  geom_boxplot() +
-  facet_wrap(vars(exp_name)) +
-  labs(title = "Boxplots of Gene Expression for Cell101-Type with AF42 Treatment",
-       subtitle = "Grouped by Experiment Name (GL-Rza or GL-xpo)",
-       fill = "Treatment Group") +
-  ylab("Gene Expression") +
-  xlab("Experiment Name") +
-  theme_bw()
-p9
+ggsave(
+  filename = here::here("figs", "2023-06-01_gene-exp-cell-line_box.png"),
+  plot = p6,
+  width = 12,
+  height = 9
+)
 
 
 # TABLES ----
-options(digits = 2)
+options(digits = 3)
 # Wild Table
 wild_af<- data |>
-  filter(cell_line == "wild", group == "AF42") |>
+  filter(cell_line == "wild", treatment == "AF42") |>
   select(gene_exp) |>
   pull()
 
 wild_plac <- data |>
-  filter(cell_line == "wild", group == "placebo") |>
+  filter(cell_line == "wild", treatment == "placebo") |>
   select(gene_exp) |>
   pull()
 
 wild_data <- data |>
   filter(cell_line == "wild") |>
-  select(group, gene_exp) |>
-  group_by(group) |>
+  select(treatment, gene_exp) |>
+  group_by(treatment) |>
   skimr::skim_without_charts() |>
   select(-c(n_missing,
             complete_rate,
@@ -223,19 +165,19 @@ wild_data
 
 # Cell101 Table
 cell101_af<- data |>
-  filter(cell_line == "cell101", group == "AF42") |>
+  filter(cell_line == "cell101", treatment == "AF42") |>
   select(gene_exp) |>
   pull()
 
 cell101_plac <- data |>
-  filter(cell_line == "cell101", group == "placebo") |>
+  filter(cell_line == "cell101", treatment == "placebo") |>
   select(gene_exp) |>
   pull()
 
 cell101_data <- data |>
   filter(cell_line == "cell101") |>
-  select(group, gene_exp) |>
-  group_by(group) |>
+  select(treatment, gene_exp) |>
+  group_by(treatment) |>
   skimr::skim_without_charts() |>
   select(-c(n_missing,
             complete_rate,
@@ -244,29 +186,41 @@ cell101_data <- data |>
   mutate(iqr = c(IQR(cell101_af), IQR(cell101_plac)))
 cell101_data
 
-cell101_data |> gt() |>
-  fmt_number(
-    columns = mean
-  )
+# Summary Tables
+wild_summary <- data.frame(
+  treatment = c("placebo", "AF42"),
+  min = wild_data$numeric.p0,
+  max = wild_data$numeric.p100,
+  median = wild_data$numeric.p50,
+  mean = wild_data$numeric.mean,
+  std_dev = wild_data$numeric.sd,
+  iqr = wild_data$iqr)
 
-
-
-groups <- c("AF42", "placebo")
-stdev_wild <- c(sd(wild_af), sd(wild_plac))
-mean_wild <- c(mean(wild_af), mean(wild_plac))
-iqr_wild <- c(IQR(wild_af), IQR(wild_plac))
-
-wild_stats <- tibble(groups, stdev_wild, mean_wild, iqr_wild)
-wild_stats
-
-gt(wild_stats)
-
-
-  gt() |>
+wild_summary |> gt() |>
   tab_header(
     title = "Summary Statistics",
-    subtitle = "Wild Type Cell"
+    subtitle = "Wild Type Cell Line"
+  ) |> gtsave(
+    here::here("tabs", "2023-06-01_wild-summary.docx")
   )
+
+cell101_summary <- data.frame(
+  treatment = c("placebo", "AF42"),
+  min = cell101_data$numeric.p0,
+  max = cell101_data$numeric.p100,
+  median = cell101_data$numeric.p50,
+  mean = cell101_data$numeric.mean,
+  std_dev = cell101_data$numeric.sd,
+  iqr = cell101_data$iqr)
+
+cell101_summary |> gt() |>
+  tab_header(
+    title = "Summary Statistics",
+    subtitle = "Type-101 Cell Line"
+  ) |> gtsave(
+    here::here("tabs", "2023-06-01_cell101-summary.docx")
+  )
+
 
 
 
