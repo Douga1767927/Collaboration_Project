@@ -105,6 +105,7 @@ cell101_summary |> gt() |>
   tab_caption(caption = "Table 2: Summary statistics for type-101 cell line.")
 ```
 
+These figures and tables were included in a powerpoint presentation "2023-03-23_Karl-EDA-slides.pptx" and submitted to karl by by C.O.B Friday March 24th.
 
 # Task 2 - Scatterplot as .tif
 
@@ -137,7 +138,7 @@ scales::show_col(c("#83a7d4", "#d1bf94"))
 Once each figure was produced, `ggarrange` was used to combine both figures under a single legend placed below the plots. The final result was the following.
 
 ![Required figure for conference with correct font (as .png file).](figs/2023-06-01_gene-exp-figure.png)
-This figure was sent to the collaborator as a .tif file with the required formatting. This was a large file and so was compressed online before being sent in an email. The compressing was easy as most of the figure is white.
+This figure was sent to the collaborator as a .tif file with the required formatting on 6th April. This was a large file and so was compressed online before being sent in an email. The compressing was easy as most of the figure is white.
 
 # Task 3 - Sample Size calculation
 
@@ -155,6 +156,8 @@ Here, we define the effect size $f$ as $$f = \frac{R^2}{1-R^2}.$$
 The sample size is calculated using
 $$n = u+v+1$$
 Using the code from "2023-05-01_sample-size-calc.R" in the R folder, it was found that the required sample size to achieve the desired power and $R^2$ value at the 5% significance level was $n=154$.
+
+This number was simply reported back to Karl in an email on Friday 5th May.
 
 # Task 4 - Fitting Predictive Model & IMRaD
 
@@ -218,3 +221,5 @@ The final model was visually tested by predicting the gene expression for wild-t
 The predicted values for gene expression were then plotted on top of the actual values to visualise the accuracy of final model, as seen below.
 
 ![Predicted and Actual values for gene expression vs concentration, calculated from the full mixed effects model.](figs/2023-06-01_prediction-actual.png)
+
+A pdf file of the final report was emailed to karl on Tuesday 30th March for use in writing their paper.
