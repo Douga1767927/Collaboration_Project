@@ -4,12 +4,12 @@
 
 # Load Libs
 install.packages("pacman")
-pacman::p_load(tidyverse, here, viridis, gt)
+pacman::p_load(tidyverse, here, viridis, gt, skmir)
 
 # Read in data
 data <- read_csv(
   here::here(
-    "data", "2023-06-01_gene-exp_cleaned.csv"
+    "data", "2023-06-01_cleaned-data-final.csv"
   )
 )
 data
