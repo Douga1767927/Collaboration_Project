@@ -26,6 +26,7 @@ p1 <- ggplot(data, aes(x = gene_exp)) +
   theme_bw()
 p1
 
+# Save figure to figs
 ggsave(
   filename = here::here("figs", "2023-06-01_gene-exp_hist.png"),
   plot = p1,
@@ -94,6 +95,7 @@ ggsave(
   height = 9
 )
 
+# Scatterplot of Gene Expression vs Concentration (Both Types) showing cell type
 p5 <- ggplot(
   data = data,
   aes(x = concentration, y = gene_exp)) +
@@ -139,18 +141,23 @@ ggsave(
 
 
 # TABLES ----
-options(digits = 3)
+options(digits = 3) #set values to be to 2 d.p.
+
 # Wild Table
+
+# get af42 gene_exp values
 wild_af<- data |>
   filter(cell_line == "wild", treatment == "AF42") |>
   select(gene_exp) |>
   pull()
 
+# get placebo gene_exp values
 wild_plac <- data |>
   filter(cell_line == "wild", treatment == "placebo") |>
   select(gene_exp) |>
   pull()
 
+# use skim_without_charts to quickly obtain summary statistics
 wild_data <- data |>
   filter(cell_line == "wild") |>
   select(treatment, gene_exp) |>
@@ -160,10 +167,10 @@ wild_data <- data |>
             complete_rate,
             skim_variable,
             skim_type)) |>
-  mutate(iqr = c(IQR(wild_af), IQR(wild_plac)))
+  mutate(iqr = c(IQR(wild_plac), IQR(wild_af)))
 wild_data
 
-# Cell101 Table
+# Cell101 Table obtained the same way
 cell101_af<- data |>
   filter(cell_line == "cell101", treatment == "AF42") |>
   select(gene_exp) |>
@@ -183,7 +190,7 @@ cell101_data <- data |>
             complete_rate,
             skim_variable,
             skim_type)) |>
-  mutate(iqr = c(IQR(cell101_af), IQR(cell101_plac)))
+  mutate(iqr = c(IQR(cell101_plac), IQR(cell101_af)))
 cell101_data
 
 # Summary Tables
@@ -212,6 +219,11 @@ cell101_summary <- data.frame(
   mean = cell101_data$numeric.mean,
   std_dev = cell101_data$numeric.sd,
   iqr = cell101_data$iqr)
+
+# save cell101 and wild summaries as datasets.
+write.csv(wild_summary, file = here::here("data","2023-06-01_wild-summary.csv"), row.names=FALSE)
+write.csv(cell101_summary, file = here::here("data","2023-06-01_cell101-summary.csv"), row.names=FALSE)
+
 
 cell101_summary |> gt() |>
   tab_header(
