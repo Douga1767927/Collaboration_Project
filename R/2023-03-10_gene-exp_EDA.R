@@ -3,6 +3,7 @@
 ## 10/03/2023
 
 # Load Libs
+install.packages("pacman")
 pacman::p_load(tidyverse, here, viridis, gt)
 
 # Read in data

@@ -3,6 +3,7 @@
 ## 29/05/2023
 
 ## Load Libs
+install.packages("pacman")
 pacman::p_load(tidyverse, lmerTest, MuMIn, gt, gglm, reshape)
 
 ## load data

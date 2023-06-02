@@ -3,6 +3,7 @@
 ## 04/04/2023
 
 ## Libs
+install.packages("pacman")
 pacman::p_load(pwr)
 
 ## Sample Size Calculation

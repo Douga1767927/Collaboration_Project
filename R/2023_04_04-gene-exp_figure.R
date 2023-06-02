@@ -3,6 +3,7 @@
 ## 04/04/2023
 
 ## Load Libs
+install.packages("pacman")
 pacman::p_load(tidyverse, here, patchwork, ggrepel, showtext, ggpubr, extrafont)
 
 ## Add font
