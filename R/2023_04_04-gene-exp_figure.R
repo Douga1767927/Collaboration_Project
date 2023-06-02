@@ -20,7 +20,7 @@ loadfonts(device="win")
 ## Load Data
 data <- read_csv(
   here::here(
-    "data", "2023-06-01_gene-exp_cleaned.csv"
+    "data", "2023-06-01_cleaned-data-final.csv"
   )
 )
 data
