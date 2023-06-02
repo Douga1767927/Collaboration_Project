@@ -13,6 +13,12 @@ editor:
   markdown: 
     wrap: 72
 ---
+# Introduction
+I was approached by Dr. Karl Berator of the institute of -Omics in Adelaide to be a statistical consultant for a paper they were writing about gene expression in cells.
+
+The experiment looks at the effect of a new treatment (Activating Factor 42) on gene expression. The AF42 treatment was compared to saline which was used as a placebo. Two cell lines were considered. Different concentrations of a growth factor (placebo or AF42) was added to the cells to see the effect on gene expression.
+
+They were interested in the effect of treatment on the effect of growth factor on gene expression.
 
 # Data and Cleaning
 
@@ -161,11 +167,6 @@ The collaborators decided that they wanted to fit a predictive model of gene exp
 -   Treatment (factor with 2 levels: placebo and AF42)
 
 The random effect in the model is cell type, which will be our random intercept term. The full linear mixed effects model containing all predictors and their interactions was fitted using the `lmer` function from the `lmerTest` package. Code for this section can be found in "2023-05-20_IMRaD-code.R" in the R folder.
-
-$$
-  \text{M_full:}\quad \text{gene exp.} \sim \text{random int.} + \text{line} + \text{conc.} + \text{treat.} +   
-  \text{line}\times\text{conc.}\times\text{treat.}
-$$
 
 Computing the ANOVA table of the full model, we find that there are three predictors with insignificant p-values, namely `treatment`, `cell_line` and `treatment:cell_line`.
 
