@@ -1,0 +1,239 @@
+---
+title: "Gene Expression - IMRaD"
+author: "Douglas Dally - a1767927"
+date: "May 2023"
+format:
+  html: 
+    self-contained: true
+  pdf: default
+execute: 
+  warning: false
+number-sections: false
+editor: 
+  markdown: 
+    wrap: 72
+#bibliography: references.bib
+---
+```{r}
+#| include: false
+pacman::p_load(tidyverse, lmerTest, MuMIn, gt, gglm)
+theme_set(theme_bw())
+
+## load data
+data <- read.csv(here::here("data", "2023-05-29_cleaned-data-final.csv"))
+```
+
+# Introduction
+The dataset is comprised of gene expression values for 8 different cell types. For each cell type, a treatment type was chosen, and a varying concentration of the treatment was applied to 11 samples. The data was provided by the Institute of -Omics in Adelaide, and consisted of 88 observations with variables:
+
+-   cell_line: A factor with 2 levels, wild-type or type-101.
+
+-   cell_type: Factor with 8 levels denoting the type of cell (GL-CsE, GL-bNo, GL-JZC, GL-fUg, GL-jEK, GL-Hoe, GL-Rza, GL-xpo).
+
+-   gene_exp: Gene expression, a continuous numeric value measured for each cell.
+
+-   treatment: Treatment type, a factor with 2 levels; placebo (saline) or Activating Factor 42.
+
+-   concentration: An integer value from 0 to 10 representing the Concentration of treatment applied to a cell in $\mu$g/L.
+
+The key research question was to use this data to produce a predictive model for gene expression.
+
+# Methods
+This analysis was performed using the packages `tidyverse` [@tidyverse], `lmerTest` [@lmerTest-2017], `gglm` [@gglm-2022] and `MumIn` [@MuMIn-2023] in R [@R] and RStudio. The data was loaded in as .csv file and cleaned. 
+
+```{r}
+#| include: false
+# clean data
+data <- data |>
+  mutate(cell_type = as.factor(exp_name),
+         cell_line = as.factor(cell_line),
+         treatment = as.factor(group))
+
+# obtain necesarry columns
+data <- data |>
+  select(cell_line, gene_exp, concentration, treatment, cell_type)
+data
+```
+
+
+This involved removing any missing values, which were represented by a -99 entry for gene_exp. This observation was removed with approval from a representative of the institute of omics. This resulted in 87 total observations.
+
+A linear mixed-effects model was chosen to be used to predict gene expression, with cell type as a random effect (intercept), and concentration, treatment and cell line as predictors, along with all corresponding interaction terms between these three predictors. 
+
+Starting with a full model for gene expression containing all predictors, a backwards selection algorithm was used to reduce the model size by removing insignificant predictors (p-value $< 0.05$) and refitting the model. The best model was then chosen using both AIC and R-squared as measures. 
+
+# Results
+The code output below gives the fixed effect coefficients of a linear fixed effects model. The last column of this table are the p-values of each predicitor in the model. 
+
+
+```{r}
+#| echo: false
+M_full <- lmer(gene_exp ~ concentration*treatment*cell_line + (1|cell_type), data = data)
+summary(M_full)$coefficients
+R2_full <- r.squaredGLMM(M_full)
+```
+
+The 3-way interaction term is significant with a p-value of $3.01\times10^{-5}$, however the next two predictors are 2-way interaction terms involving cell line, which have insignificant p-values (both above 0.05). These predictors need to be removed from the model, however, by the principle of marginality the 3-way interaction term must first be removed. The coefficients of the model are reassessed and shown below.
+```{r}
+#| echo: false
+#| tbl-cap: Step 2
+M2 <- update(M_full, .~. - concentration:treatment:cell_line)
+summary(M2)$coefficients
+R2_2 <- r.squaredGLMM(M2)
+```
+We see that the interaction term corresponding to a wild type cell line under a placebo treatment is insignificant (p-value = 0.369), and so we need to remove this predictor. Refitting the model:
+
+```{r}
+#| echo: false
+M3 <- update(M2, .~. - treatment:cell_line)
+summary(M3)$coefficients
+R2_3 <- r.squaredGLMM(M3)
+```
+
+The output now shows a model with two 2-way interaction terms which are significant, but now the predictor for a wild-type cell line is insignificant. To remove this single predictor, the interaction terms are first removed by the principle of marginality.
+```{r}
+#| echo: false
+M4 <- update(M3, .~. - concentration:treatment - concentration:cell_line)
+summary(M4)$coefficients
+R2_4 <- r.squaredGLMM(M4)
+```
+
+Following this step, the predictor for cell line is still insignificant with a p-value of 0.215, and is removed.
+```{r}
+#| echo: false
+M5 <- update(M4, .~. - cell_line)
+summary(M5)$coefficients
+R2_5 <- r.squaredGLMM(M5)
+```
+Finally, the model has been reduced to a point where the p-values for the remaining predictors are significant, as seen above. However, this model now only has 2 predictors.
+
+These 5 models were then compared by computing the AIC and R-squared, summarised in Table 1.
+```{r}
+#| echo: false
+AIC <- anova(M5, M4, M3, M2, M_full)[2]
+R_squared <- rbind(R2_5, R2_4, R2_3, R2_2, R2_full)
+n_pred <- c(2,3,5,6,7)
+model <- rev(c("full", "step2", "step3", "step4", "step5"))
+
+sum_tab <- cbind(model, n_pred, AIC, R_squared)
+```
+
+```{r}
+#| echo: false
+#| tbl-cap: AIC and R-squared value (both margionalised and conditional) for each model generated from the backwards selection process. 
+#| label: Table 1
+sum_tab |> gt()
+```
+
+
+Figure 1 shows the diagnostic plots for the full model, so we can check the assumptions of a linear model.
+```{r}
+#| echo: false
+#| fig-cap: diagnostics plots for full mixed effects model.   
+gglm(M_full)
+```
+
+Table 2 shows the results of the predicted and actual value for gene expression given a wild-type cell of type GL-bNo when given a placebo treatment at a concentration of 8 $\mu$g/L.
+
+```{r}
+#| echo: false
+# Predicting data
+new_data <- data.frame(
+  cell_line = "wild",
+  cell_type = "GL-bNo",
+  concentration = 8,
+  treatment = "placebo")
+
+prediction <- predict(M_full, new_data)
+actual <- 8.23
+tab2 <- cbind(new_data, prediction, actual)
+```
+
+```{r}
+#| echo: false
+#| tbl-cap: Prediction and Actual gene expression value for a wild-type GL-bNo cell treated with placebo at a concentration of 8 micrograms per litre. 
+tab2 |> gt()
+```
+
+
+# Discussion
+From Table 1, we see that the best model is the full linear mixed effects model, as it has the lowest AIC of 371 and the greatest R-squared values with 0.89 marginalised and 0.97 conditional. This means, going by the marginal R-squared, that the model captures 89% of the variance in the data.
+
+The assumptions of linear modelling can be checked using Figure 1. From the residuals vs. fitted plot, we see there may be some evidence of non-constant variance as seen by a slight curve, but overall is not too bad. The normal QQ plot shows a roughly linear relationship, while the scale-location seems evenly spread. There are no major outliers in the residual vs. leverage plot. Overall, the assumptions for a linear model seem correct.   
+
+From Table 2, we see that the model produces a prediction that is close to the actual recorded gene expression for a cell with those conditions.
+
+In future, splitting the data into testing and training sets before fitting the model, and then using the model to predict the testing set would have been a better approach to testing the models accuracy. This would have also helped prevent over fitting.
+
+# Appendix
+## Code for Analysis
+```{r}
+#| output: false
+
+# Load Libs
+pacman::p_load(tidyverse, lmerTest, MuMIn, gt, gglm)
+
+# load data
+data <- read.csv(here::here("data", "2023-05-29_cleaned-data-final.csv"))
+
+# clean data
+data <- data |>
+  mutate(cell_type = as.factor(exp_name),
+         cell_line = as.factor(cell_line),
+         treatment = as.factor(group))
+
+# obtain necesarry columns
+data <- data |>
+  select(cell_line, gene_exp, concentration, treatment, cell_type)
+data
+
+# Full fixed effect model
+M_full <- lmer(gene_exp ~ concentration*treatment*cell_line + (1|cell_type), 
+               data = data)
+summary(M_full)$coefficients
+R2_full <- r.squaredGLMM(M_full)
+
+# remove 3 way interaction term
+M2 <- update(M_full, .~. - concentration:treatment:cell_line)
+summary(M2)$coefficients
+R2_2 <- r.squaredGLMM(M2)
+
+# remove 2 way interaction term with insignificant P-value
+M3 <- update(M2, .~. - treatment:cell_line)
+summary(M3)$coefficients
+R2_3 <- r.squaredGLMM(M3)
+
+# still have insignificant terms as single predictors. 
+#hence to remove them we must remove all interaction terms
+M4 <- update(M3, .~. - concentration:treatment - concentration:cell_line)
+summary(M4)$coefficients
+R2_4 <- r.squaredGLMM(M4)
+
+# cell_line wild is insignificant
+M5 <- update(M4, .~. - cell_line)
+summary(M5)$coefficients
+R2_5 <- r.squaredGLMM(M5)
+
+# get summary table for 5 models
+AIC <- anova(M5, M4, M3, M2, M_full)[2]
+R_squared <- rbind(R2_5, R2_4, R2_3, R2_2, R2_full)
+n_pred <- c(2,3,5,6,7)
+
+sum_tab <- cbind(n_pred, AIC, R_squared)
+sum_tab
+
+# Predicting data
+new_data <- data.frame(
+  cell_line = "wild",
+  cell_type = "GL-bNo",
+  concentration = 8,
+  treatment = "placebo")
+new_data
+
+prediction <- predict(M_full, new_data)
+actual <- 8.23
+tab2 <- cbind(new_data, prediction, actual)
+tab2 |> gt()
+```
+
+
