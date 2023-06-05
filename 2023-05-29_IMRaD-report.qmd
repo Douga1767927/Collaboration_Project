@@ -20,7 +20,7 @@ pacman::p_load(tidyverse, lmerTest, MuMIn, gt, gglm)
 theme_set(theme_bw())
 
 ## load data
-data <- read.csv(here::here("data", "2023-05-29_cleaned-data-final.csv"))
+data <- read.csv(here::here("data", "2023-06-01_cleaned-data-final.csv"))
 ```
 
 # Introduction
@@ -43,15 +43,6 @@ This analysis was performed using the packages `tidyverse` [@tidyverse], `lmerTe
 
 ```{r}
 #| include: false
-# clean data
-data <- data |>
-  mutate(cell_type = as.factor(exp_name),
-         cell_line = as.factor(cell_line),
-         treatment = as.factor(group))
-
-# obtain necesarry columns
-data <- data |>
-  select(cell_line, gene_exp, concentration, treatment, cell_type)
 data
 ```
 
@@ -63,7 +54,7 @@ A linear mixed-effects model was chosen to be used to predict gene expression, w
 Starting with a full model for gene expression containing all predictors, a backwards selection algorithm was used to reduce the model size by removing insignificant predictors (p-value $< 0.05$) and refitting the model. The best model was then chosen using both AIC and R-squared as measures. 
 
 # Results
-The code output below gives the fixed effect coefficients of a linear fixed effects model. The last column of this table are the p-values of each predicitor in the model. 
+The code output below gives the fixed effect coefficients of a linear fixed effects model. The last column of this table are the p-values of each predictor in the model. 
 
 
 ```{r}
@@ -174,18 +165,7 @@ In future, splitting the data into testing and training sets before fitting the 
 pacman::p_load(tidyverse, lmerTest, MuMIn, gt, gglm)
 
 # load data
-data <- read.csv(here::here("data", "2023-05-29_cleaned-data-final.csv"))
-
-# clean data
-data <- data |>
-  mutate(cell_type = as.factor(exp_name),
-         cell_line = as.factor(cell_line),
-         treatment = as.factor(group))
-
-# obtain necesarry columns
-data <- data |>
-  select(cell_line, gene_exp, concentration, treatment, cell_type)
-data
+data <- read.csv(here::here("data", "2023-06-01_cleaned-data-final.csv"))
 
 # Full fixed effect model
 M_full <- lmer(gene_exp ~ concentration*treatment*cell_line + (1|cell_type), 
